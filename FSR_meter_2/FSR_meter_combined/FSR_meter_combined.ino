@@ -6,9 +6,11 @@ This code displays text on the shield, and also reads the buttons on the keypad.
 When a button is pressed, the backlight changes color.
 
 **********************/
-
-#define startup_str_1 "FSR_meter_4"
-#define startup_str_2 "Rpd = 100k"
+extern char CAL_date[];
+extern char CAL_Rpd[];
+extern float p[5];
+//#define startup_str_1 "CAL date"
+//#define startup_str_2 "Rpd = 100k"
 
 // define ONE of these macros to select the display mode
 //#define DISPLAY_ADC_RAW 1
@@ -59,9 +61,9 @@ void setup() {
   int time = millis();
 
   lcd.setCursor(0, 0);
-  lcd.print(startup_str_1);
+  lcd.print(CAL_date);
   lcd.setCursor(0, 1);
-  lcd.print(startup_str_2);
+  lcd.print(CAL_Rpd);
   
   delay(2000);
   lcd.setCursor(0, 0);
@@ -232,7 +234,7 @@ double apply_cal_kohm_to_kg(float raw_kohm)
   //float p[5] = {2.8373e6, -4.0202e5, 2.2768e4, 291.58,5.4305}; //2_25_21
   //float p[5] = {3.5249e7, -2.7592e6, 7.4759e4, -194.5859,3.6994}; //4_08_21
   //float p[5] = {1.1565e7, -1.1762e6, 4.7002e4, 87.667,3.8749}; //4_16_21
-  float p[5] = {-8.947412e+08, 1.118037e+08, -9.294218e+05, 5.781864e+03, 4.401810e+00}; //7_22_21
+  //float p[5] = {-8.947412e+08, 1.118037e+08, -9.294218e+05, 5.781864e+03, 4.401810e+00}; //7_22_21
   // yfit = p1*x^n + p2*x^(n-1) + .... pn*x + pn+1
   // where n=1,2,....,n+1
   uint16_t k;
