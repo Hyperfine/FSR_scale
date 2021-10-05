@@ -13,10 +13,10 @@ extern float p[5];
 //#define startup_str_2 "Rpd = 100k"
 
 // define ONE of these macros to select the display mode
-//#define DISPLAY_ADC_RAW 1
+#define DISPLAY_ADC_RAW 1
 //#define DISPLAY_NORMALIZED 1
 //#define DISPLAY_KOHM 1
-#define DISPLAY_CAL_KG 1
+//#define DISPLAY_CAL_KG 1
 
 #define Rpd_kohm 100.000
 #define Rfsr_max_kohm 9999.00
@@ -26,6 +26,7 @@ extern float p[5];
 #include <Adafruit_RGBLCDShield.h>
 #include <utility/Adafruit_MCP23017.h>
 #include <stdlib.h>
+#include "HX711.h"
 
 // The shield uses the I2C SCL and SDA pins. On classic Arduinos
 // this is Analog 4 and 5 so you can't use those for analogRead() anymore
@@ -43,14 +44,23 @@ Adafruit_RGBLCDShield lcd = Adafruit_RGBLCDShield();
 #define WHITE 0x7
 #define analogPin A0
 
+#define HX711_SCK_p A2
+#define HX711_DOUT_p A3
+#define calibration_factor -7050.0 //This value is obtained using the SparkFun_HX711_Calibration sketch
+
 #define uart_msg_tx_LEN 64
 char msg_out[uart_msg_tx_LEN];
+
+//HX711 HX711_LC;
+HX711 scale;
+float HX711_zerocal=0;
 
 void setup() {
   analogReference(EXTERNAL);
   
   Serial.begin(57600);
   Serial.println("setup");
+  
   // set up the LCD's number of columns and rows: 
   lcd.begin(16, 2);
 
@@ -81,9 +91,25 @@ void setup() {
   lcd.print("FSR kG:");
   Serial.println("FSR kG:");
 #endif
-  
+
   lcd.clear();
   lcd.setCursor(0, 1);
+  
+  
+  	//digitalWrite(HX711_DOUT_p,HIGH); //enable pullup on data pin
+	Serial.println("Init HX711");
+	
+	scale.begin(HX711_DOUT_p, HX711_SCK_p);
+	scale.set_scale(calibration_factor); //This value is obtained by using the SparkFun_HX711_Calibration sketch
+	scale.tare();	//Assuming there is no weight on the scale at start up, reset the scale to 0
+#if 0
+
+	HX711_LC.begin(HX711_DOUT_p, HX711_SCK_p);
+	Serial.println("Read HX711");
+	HX711_zerocal=HX711_LC.read_average();
+	sprintf(msg_out,"HX711 zero = %d\n",HX711_zerocal);
+	Serial.print(msg_out);
+#endif
 }
 
 float FSR_measurement_raw_norm;
@@ -91,18 +117,31 @@ float FSR_measurement_units;
 
 void loop() {
 
-  //not using any buttons
-  //uint8_t buttons = lcd.readButtons();
+		//FSR_measurement_raw_norm=measureFSR_float_norm();
+		FSR_measurement_raw_norm=(float)scale.get_value(40);
+	
+	
+		#if 0
+		Serial.print("Reading: ");
+		Serial.print(scale.get_units(), 1); //scale.get_units() returns a float
+		Serial.print(" lbs"); //You can change this to kg but you'll need to refactor the calibration_factor
+		Serial.println();
+		
+		Serial.print("Raw: ");
+		Serial.print(FSR_measurement_raw_norm); //scale.get_units() returns a float
+		Serial.print(" raw"); //You can change this to kg but you'll need to refactor the calibration_factor
+		Serial.println();
+#endif
 
   char teststring[12];
   lcd.setCursor(0,1);
   int a;
 
-  FSR_measurement_raw_norm=measureFSR_float_norm();
-  
+
 
 #if defined(DISPLAY_ADC_RAW)
-  FSR_measurement_units=FSR_measurement_raw_norm*1023.0;
+  //FSR_measurement_units=FSR_measurement_raw_norm*1023.0;
+  FSR_measurement_units=FSR_measurement_raw_norm;
   #if defined(CAL_ADC_raw)
   FSR_measurement_units=apply_cal(FSR_measurement_units);
   #endif
